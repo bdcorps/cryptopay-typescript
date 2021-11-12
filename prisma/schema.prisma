@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   Int           @id @default(autoincrement())
+  name                 String?       @db.VarChar(255)
+  email                String        @unique @db.VarChar(255)
+  accessToken          String        @db.VarChar(255)
+  refreshToken         String        @db.VarChar(255)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+  account              Account?
+  PaymentLinksSent     PaymentLink[] @relation("sentBy")
+  PaymentLinksReceived PaymentLink[] @relation("sentTo")
+}
+
+model PaymentLink {
+  id        String        @id @unique
+  amount    Int
+  sentToId  Int
+  sentById  Int
+  status    PaymentStatus @default(INITIATED)
+  emailSent Boolean       @default(false)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  sentBy    User          @relation("sentBy", fields: [sentById], references: [id])
+  sentTo    User          @relation("sentTo", fields: [sentToId], references: [id])
+}
+
+model Account {
+  id        Int      @unique @default(autoincrement())
+  address   String   @unique
+  userId    Int      @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, address])
+}
+
+enum PaymentStatus {
+  INITIATED
+  FAILED
+  COMPLETED
+  EXPIRED
+}
